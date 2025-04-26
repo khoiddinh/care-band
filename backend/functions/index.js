@@ -34,7 +34,9 @@ exports.getPatientRecord = onRequest(async (req, res) => {
         }
 
         const data = doc.data();
+
         res.status(200).json({
+            uuid: doc.id, 
             name: data.name,
             dob: data.dob,
             ssn: data.ssn,
@@ -46,6 +48,7 @@ exports.getPatientRecord = onRequest(async (req, res) => {
         res.status(500).json({ error: e.message });
     }
 });
+
 
 // No auth checking
 exports.addOrUpdatePatient = onRequest(async (req, res) => {

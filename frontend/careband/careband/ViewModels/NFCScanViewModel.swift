@@ -1,21 +1,24 @@
 //
-//  ScanViewModel.swift
+//  NFCScanViewModel.swift
 //  careband
 //
-//  Created by Khoi Dinh on 4/25/25.
+//  Created by Khoi Dinh on 4/26/25.
 //
+
+
 import Foundation
-import FirebaseAuth
 import CoreNFC
+import FirebaseAuth
 import Observation
 
 @Observable
-class ScanViewModel: NSObject, NFCNDEFReaderSessionDelegate {
+class NFCScanViewModel: NSObject, NFCNDEFReaderSessionDelegate {
     var patient: Patient?
     var message: String = "Tap scan to begin."
+    
     private var session: NFCNDEFReaderSession?
-
-    func startScanning() {
+    
+    func startNFCScan() {
         guard NFCNDEFReaderSession.readingAvailable else {
             self.message = "NFC not supported on this device"
             return
@@ -24,42 +27,24 @@ class ScanViewModel: NSObject, NFCNDEFReaderSessionDelegate {
         session?.alertMessage = "Hold your iPhone near the bracelet."
         session?.begin()
     }
-
+    
     func readerSession(_ session: NFCNDEFReaderSession, didInvalidateWithError error: Error) {
         DispatchQueue.main.async {
             self.message = "Scan failed: \(error.localizedDescription)"
         }
     }
-
+    
     func readerSession(_ session: NFCNDEFReaderSession, didDetectNDEFs messages: [NFCNDEFMessage]) {
-        guard let firstMessage = messages.first else {
-            DispatchQueue.main.async {
-                self.message = "No NDEF messages found."
-            }
-            return
-        }
-        
-        for (i, record) in firstMessage.records.enumerated() {
-            print("Record \(i):")
-            print("- Type Name Format: \(record.typeNameFormat.rawValue)")
-            print("- Type: \(String(data: record.type, encoding: .utf8) ?? "Unknown Type")")
-            print("- Identifier: \(String(data: record.identifier, encoding: .utf8) ?? "Unknown Identifier")")
-            print("- Payload (raw bytes): \(record.payload as NSData)")
-            print("- Payload (utf8): \(String(data: record.payload.dropFirst(), encoding: .utf8) ?? "Unreadable payload")")
-            print("-----------------------------")
-        }
-        
-        if let record = firstMessage.records.first,
-           let uuid = String(data: record.payload.dropFirst(), encoding: .utf8) {
-            //fetchPatientRecord(uuid: uuid) //TODO: make this go the update patient view
-        } else {
+        guard let record = messages.first?.records.first,
+              let uuid = String(data: record.payload.dropFirst(), encoding: .utf8) else {
             DispatchQueue.main.async {
                 self.message = "Failed to read UUID."
             }
+            return
         }
+        fetchPatientRecord(uuid: uuid)
     }
-
-
+    
     func fetchPatientRecord(uuid: String) {
         guard let user = Auth.auth().currentUser else {
             self.message = "User not signed in"
@@ -74,7 +59,12 @@ class ScanViewModel: NSObject, NFCNDEFReaderSessionDelegate {
                 return
             }
 
-            guard let url = URL(string: "https://<your-region>-<your-project-id>.cloudfunctions.net/getPatientRecord") else { return }
+            guard let url = URL(string: "https://<your-region>-<your-project-id>.cloudfunctions.net/getPatientRecord") else {
+                DispatchQueue.main.async {
+                    self.message = "Invalid backend URL"
+                }
+                return
+            }
 
             var request = URLRequest(url: url)
             request.httpMethod = "POST"
