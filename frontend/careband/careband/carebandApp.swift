@@ -12,9 +12,8 @@ import FirebaseAuth
 import FirebaseCore
 
 @main
-struct MedicalBraceletApp: App {
+struct carebandApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
-    
     var body: some Scene {
         WindowGroup {
             NavigationView {

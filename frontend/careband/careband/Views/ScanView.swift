@@ -8,6 +8,7 @@ import SwiftUI
 
 struct ScanView: View {
     @State var viewModel = ScanViewModel()
+    
     @Environment(AuthViewModel.self) var authViewModel
 
     var body: some View {
@@ -34,10 +35,6 @@ struct ScanView: View {
             .foregroundColor(.white)
             .clipShape(Capsule())
 
-            Button("Sign Out") {
-                authViewModel.signOut()
-            }
-            .padding(.top, 10)
         }
         .padding()
     }

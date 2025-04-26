@@ -10,7 +10,7 @@ import CoreNFC
 import Observation
 
 @Observable
-class ScanViewModel: NSObject, ObservableObject, NFCNDEFReaderSessionDelegate {
+class ScanViewModel: NSObject, NFCNDEFReaderSessionDelegate {
     var patient: Patient?
     var message: String = "Tap scan to begin."
     private var session: NFCNDEFReaderSession?
@@ -32,15 +32,33 @@ class ScanViewModel: NSObject, ObservableObject, NFCNDEFReaderSessionDelegate {
     }
 
     func readerSession(_ session: NFCNDEFReaderSession, didDetectNDEFs messages: [NFCNDEFMessage]) {
-        if let record = messages.first?.records.first,
+        guard let firstMessage = messages.first else {
+            DispatchQueue.main.async {
+                self.message = "No NDEF messages found."
+            }
+            return
+        }
+        
+        for (i, record) in firstMessage.records.enumerated() {
+            print("Record \(i):")
+            print("- Type Name Format: \(record.typeNameFormat.rawValue)")
+            print("- Type: \(String(data: record.type, encoding: .utf8) ?? "Unknown Type")")
+            print("- Identifier: \(String(data: record.identifier, encoding: .utf8) ?? "Unknown Identifier")")
+            print("- Payload (raw bytes): \(record.payload as NSData)")
+            print("- Payload (utf8): \(String(data: record.payload.dropFirst(), encoding: .utf8) ?? "Unreadable payload")")
+            print("-----------------------------")
+        }
+        
+        if let record = firstMessage.records.first,
            let uuid = String(data: record.payload.dropFirst(), encoding: .utf8) {
-            fetchPatientRecord(uuid: uuid)
+            //fetchPatientRecord(uuid: uuid) //TODO: make this go the update patient view
         } else {
             DispatchQueue.main.async {
                 self.message = "Failed to read UUID."
             }
         }
     }
+
 
     func fetchPatientRecord(uuid: String) {
         guard let user = Auth.auth().currentUser else {
@@ -56,7 +74,7 @@ class ScanViewModel: NSObject, ObservableObject, NFCNDEFReaderSessionDelegate {
                 return
             }
 
-            guard let url = URL(string: "https://<your-region>-<your-project-id>.cloudfunctions.net/api/getPatientRecord") else { return }
+            guard let url = URL(string: "https://<your-region>-<your-project-id>.cloudfunctions.net/getPatientRecord") else { return }
 
             var request = URLRequest(url: url)
             request.httpMethod = "POST"

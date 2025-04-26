@@ -9,12 +9,10 @@ import SwiftUI
 
 struct ContentView: View {
     @State var authViewModel = AuthViewModel()
-
-
-
+    
     var body: some View {
         if authViewModel.isAuthenticated {
-            ScanView()
+            HomeView()
                 .environment(authViewModel)
         } else {
             LoginView()

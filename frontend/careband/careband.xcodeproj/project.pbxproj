@@ -11,9 +11,6 @@
 		8DFBE68B2DBC94C60007B995 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 8DFBE68A2DBC94C60007B995 /* FirebaseCore */; };
 		8DFBE68D2DBC94C60007B995 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 8DFBE68C2DBC94C60007B995 /* FirebaseFirestore */; };
 		8DFBE68F2DBC94C60007B995 /* FirebaseFunctions in Frameworks */ = {isa = PBXBuildFile; productRef = 8DFBE68E2DBC94C60007B995 /* FirebaseFunctions */; };
-		8DFBE6CC2DBC9F990007B995 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 8DFBE6CB2DBC9F990007B995 /* GoogleService-Info.plist */; };
-		8DFBE6CD2DBC9F990007B995 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 8DFBE6CB2DBC9F990007B995 /* GoogleService-Info.plist */; };
-		8DFBE6CE2DBC9F990007B995 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 8DFBE6CB2DBC9F990007B995 /* GoogleService-Info.plist */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -37,12 +34,24 @@
 		8DFBE65A2DBC944D0007B995 /* careband.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = careband.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8DFBE66A2DBC944F0007B995 /* carebandTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = carebandTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		8DFBE6742DBC944F0007B995 /* carebandUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = carebandUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		8DFBE6CB2DBC9F990007B995 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		8DFBE6E12DBCCA7F0007B995 /* Exceptions for "careband" folder in "careband" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 8DFBE6592DBC944D0007B995 /* careband */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		8DFBE65C2DBC944D0007B995 /* careband */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				8DFBE6E12DBCCA7F0007B995 /* Exceptions for "careband" folder in "careband" target */,
+			);
 			path = careband;
 			sourceTree = "<group>";
 		};
@@ -94,7 +103,6 @@
 				8DFBE66D2DBC944F0007B995 /* carebandTests */,
 				8DFBE6772DBC944F0007B995 /* carebandUITests */,
 				8DFBE65B2DBC944D0007B995 /* Products */,
-				8DFBE6CB2DBC9F990007B995 /* GoogleService-Info.plist */,
 			);
 			sourceTree = "<group>";
 		};
@@ -235,7 +243,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8DFBE6CC2DBC9F990007B995 /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -243,7 +250,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8DFBE6CE2DBC9F990007B995 /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -251,7 +257,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8DFBE6CD2DBC9F990007B995 /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -419,12 +424,14 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = careband/careband.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"careband/Preview Content\"";
 				DEVELOPMENT_TEAM = GKAWJCSSHU;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = careband/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -448,12 +455,14 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = careband/careband.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"careband/Preview Content\"";
 				DEVELOPMENT_TEAM = GKAWJCSSHU;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = careband/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
