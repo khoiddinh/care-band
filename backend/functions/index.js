@@ -23,38 +23,38 @@ const admin = require("firebase-admin");
 admin.initializeApp();
 const db = admin.firestore();
 
+
 exports.getPatientRecord = onRequest(async (req, res) => {
     try {
         const authHeader = req.headers.authorization;
         if (!authHeader?.startsWith("Bearer ")) {
-            return res.status(401).json({ error: "Missing or invalid auth header" });
+            return res.status(401).json({ error: "Missing or invalid Authorization header" });
         }
 
         const idToken = authHeader.split("Bearer ")[1];
-        const decodedToken = await admin.auth().verifyIdToken(idToken);
-        const hospitalId = decodedToken.hospital_id;
-
-        if (!hospitalId) return res.status(403).json({ error: "Missing hospital_id" });
+        await admin.auth().verifyIdToken(idToken); // Only verify they are signed in, no hospital check
 
         const { uuid } = req.body;
-        if (!uuid) return res.status(400).json({ error: "Missing UUID" });
+        if (!uuid) {
+            return res.status(400).json({ error: "Missing UUID" });
+        }
 
         const doc = await db.collection("patients").doc(uuid).get();
-        if (!doc.exists) return res.status(404).json({ error: "Patient not found" });
+        if (!doc.exists) {
+            return res.status(404).json({ error: "Patient not found" });
+        }
 
         const data = doc.data();
-        if (!data.assignedHospitals.includes(hospitalId)) {
-            return res.status(403).json({ error: "Unauthorized hospital" });
-        }
 
         res.status(200).json({
             name: data.name,
             dob: data.dob,
+            ssn: data.ssn,
             allergies: data.allergies,
             history: data.history || ""
         });
     } catch (e) {
-        console.error("Error:", e);
+        console.error("Error fetching patient record:", e);
         res.status(500).json({ error: e.message });
     }
 });
