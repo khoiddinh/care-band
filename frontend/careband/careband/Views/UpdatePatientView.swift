@@ -21,6 +21,10 @@ struct UpdatePatientView: View {
     @State private var showNewUUIDWarning = false
     @State private var newHistoryEntry: String = ""
     @State private var newAllergyEntry: String = ""
+    
+    @State private var showQRCodeSheet = false
+    @State private var generatedUUID: String?
+
 
     init(existingPatient: Patient) {
         self.existingPatient = existingPatient
@@ -119,6 +123,12 @@ struct UpdatePatientView: View {
                     }
                 }
                 .padding(.top, 4)
+                .sheet(isPresented: $showQRCodeSheet) {
+                    if let uuid = generatedUUID {
+                        QRCodeSheet(uuid: uuid)
+                    }
+                }
+
             }
 
             Button("Update Patient") {
@@ -238,54 +248,81 @@ struct UpdatePatientView: View {
     }
 
     func generateNewUUID() {
-        guard let user = Auth.auth().currentUser else {
-            self.message = "User not signed in"
+        guard let url = URL(string: "https://us-central1-care-band-2bab5.cloudfunctions.net/addOrUpdatePatient") else {
+            self.message = "Invalid backend URL"
             return
         }
 
-        user.getIDToken { token, error in
-            guard let token = token else {
-                self.message = "Auth token error"
-                return
-            }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        let dobString = formatter.string(from: dob)
 
-            guard let url = URL(string: "https://\(Config.region)-\(Config.projectID).cloudfunctions.net/addOrUpdatePatient") else {
-                self.message = "Invalid backend URL"
-                return
-            }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-            let formatter = DateFormatter()
-            formatter.dateFormat = "yyyy-MM-dd"
-            let dobString = formatter.string(from: dob)
+        // ⚡ NO UUID sent. Backend will generate
+        let body: [String: Any] = [
+            "name": name,
+            "dob": dobString,
+            "ssn": ssn,
+            "allergies": allergies.joined(separator: "; "), // match backend expectation
+            "history": history // full existing history copied over
+        ]
 
-            var request = URLRequest(url: url)
-            request.httpMethod = "POST"
-            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
 
-            let body: [String: Any] = [
-                "name": name,
-                "dob": dobString,
-                "ssn": ssn,
-                "allergies": allergies.joined(separator: "; "),
-                "history": history
-            ]
-
-            request.httpBody = try? JSONSerialization.data(withJSONObject: body)
-
-            URLSession.shared.dataTask(with: request) { data, response, error in
-                guard let data = data else {
-                    DispatchQueue.main.async {
-                        self.message = "Failed to generate new UUID."
-                    }
-                    return
-                }
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            guard let data = data else {
                 DispatchQueue.main.async {
-                    self.message = "New UUID created successfully."
-                    self.showSuccess = true
+                    self.message = "Network error"
                 }
-            }.resume()
+                return
+            }
+
+            if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let newUUID = (json["uuid"] as? String) {
+                
+                DispatchQueue.main.async {
+                    self.generatedUUID = newUUID
+                    self.showQRCodeSheet = true
+                }
+
+                // 🔥 After new patient created, delete old one
+                deleteOldPatient(uuid: existingPatient.uuid)
+
+            } else {
+                let serverResponse = String(data: data, encoding: .utf8) ?? "Unknown server response"
+                DispatchQueue.main.async {
+                    self.message = "Server error: \(serverResponse)"
+                }
+            }
+        }.resume()
+    }
+    
+    func deleteOldPatient(uuid: String) {
+        guard let url = URL(string: "https://us-central1-care-band-2bab5.cloudfunctions.net/deletePatient") else {
+            print("Invalid delete backend URL")
+            return
         }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let body: [String: Any] = [
+            "uuid": uuid
+        ]
+
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                print("Error deleting old patient: \(error)")
+                return
+            }
+            print("Old patient deleted successfully.")
+        }.resume()
     }
 
     static let dateFormatter: DateFormatter = {
