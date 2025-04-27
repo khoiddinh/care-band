@@ -22,8 +22,6 @@ struct UpdatePatientView: View {
     @State private var newHistoryEntry: String = ""
     @State private var newAllergyEntry: String = ""
 
-
-
     init(existingPatient: Patient) {
         self.existingPatient = existingPatient
         _name = State(initialValue: existingPatient.name)
@@ -82,9 +80,8 @@ struct UpdatePatientView: View {
                     }
                 }
 
-                
-                VStack(alignment: .leading) {
-                    Text("History")
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Add New History Entry")
                         .font(.subheadline)
                         .foregroundColor(.gray)
 
@@ -94,21 +91,35 @@ struct UpdatePatientView: View {
                             RoundedRectangle(cornerRadius: 8)
                                 .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                         )
-                        .onSubmit {
-                            if !newHistoryEntry.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                                let newEntry = "[\(currentDateString())] \(newHistoryEntry.trimmingCharacters(in: .whitespacesAndNewlines))"
-                                if history.isEmpty {
-                                    history = newEntry
-                                } else {
-                                    history += "\n\(newEntry)"
-                                }
-                                newHistoryEntry = ""
-                            }
-                        }
                 }
 
-            }
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Existing History")
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
 
+                    if parsedHistoryEntries.isEmpty {
+                        Text("No history available.")
+                            .font(.body)
+                    } else {
+                        ForEach(parsedHistoryEntries, id: \.self) { entry in
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(entry.date)
+                                    .font(.caption)
+                                    .foregroundColor(.blue)
+
+                                Text(entry.note)
+                                    .font(.body)
+                                    .foregroundColor(.primary)
+
+                                Divider()
+                            }
+                            .padding(.vertical, 4)
+                        }
+                    }
+                }
+                .padding(.top, 4)
+            }
 
             Button("Update Patient") {
                 updatePatient()
@@ -137,6 +148,33 @@ struct UpdatePatientView: View {
             }
         }
         .navigationTitle("Update Patient")
+    }
+
+    // 🧠 Parses old history nicely
+    var parsedHistoryEntries: [HistoryEntry] {
+        let lines = history.components(separatedBy: "\n")
+        return lines.compactMap { line in
+            parseHistoryLine(line)
+        }
+    }
+
+    struct HistoryEntry: Hashable {
+        let date: String
+        let note: String
+    }
+
+    func parseHistoryLine(_ line: String) -> HistoryEntry? {
+        guard let start = line.firstIndex(of: "["), let end = line.firstIndex(of: "]") else {
+            return nil
+        }
+
+        let dateRange = line.index(after: start)..<end
+        let date = String(line[dateRange])
+
+        let noteStart = line.index(after: end)
+        let note = line[noteStart...].trimmingCharacters(in: .whitespaces)
+
+        return HistoryEntry(date: date, note: note)
     }
 
     func currentDateString() -> String {
@@ -171,19 +209,22 @@ struct UpdatePatientView: View {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
+            // ✏️ ONLY send the new history text (not the full old history)
+            let trimmedHistory = newHistoryEntry.trimmingCharacters(in: .whitespacesAndNewlines)
+
             let body: [String: Any] = [
                 "uuid": existingPatient.uuid,
                 "name": name,
                 "dob": dobString,
                 "ssn": ssn,
                 "allergies": allergies.joined(separator: "; "),
-                "history": history
+                "history": trimmedHistory // only new update
             ]
 
             request.httpBody = try? JSONSerialization.data(withJSONObject: body)
 
             URLSession.shared.dataTask(with: request) { data, response, error in
-                guard let data = data else {
+                guard data != nil else {
                     DispatchQueue.main.async {
                         self.message = "Update failed."
                     }

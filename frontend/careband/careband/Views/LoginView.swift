@@ -13,31 +13,60 @@ struct LoginView: View {
 
     var body: some View {
         VStack(spacing: 20) {
-            Text("Hospital Login")
-                .font(.largeTitle)
-                .padding(.bottom, 20)
+            Spacer()
 
-            TextField("Email", text: $email)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-                .autocapitalization(.none)
-                .keyboardType(.emailAddress)
+            VStack(spacing: 16) {
+                Image(systemName: "cross.case.fill")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 80, height: 80)
+                    .foregroundColor(.blue)
+                    .padding(.bottom, 10)
 
-            SecureField("Password", text: $password)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
+                Text("CareBand")
+                    .font(.system(size: 36, weight: .bold))
 
-            Button("Login") {
+                Text("Hospital Login")
+                    .font(.title3)
+                    .foregroundColor(.gray)
+
+                VStack(spacing: 12) {
+                    TextField("Email", text: $email)
+                        .textFieldStyle(.roundedBorder)
+                        .keyboardType(.emailAddress)
+                        .autocapitalization(.none)
+
+                    SecureField("Password", text: $password)
+                        .textFieldStyle(.roundedBorder)
+                }
+                .padding(.top, 10)
+
+                if let error = authViewModel.errorMessage {
+                    Text(error)
+                        .foregroundColor(.red)
+                        .font(.caption)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                }
+            }
+            .padding(.horizontal)
+
+            Button(action: {
                 authViewModel.signIn(email: email, password: password)
+            }) {
+                Text("Login")
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(12)
             }
-            .padding()
-            .background(Color.blue)
-            .foregroundColor(.white)
-            .clipShape(Capsule())
+            .padding(.top, 20)
+            .padding(.horizontal)
 
-            if let error = authViewModel.errorMessage {
-                Text(error)
-                    .foregroundColor(.red)
-            }
+            Spacer()
         }
-        .padding()
+        .background(Color(UIColor.systemGroupedBackground))
+        .ignoresSafeArea(edges: .bottom)
     }
 }

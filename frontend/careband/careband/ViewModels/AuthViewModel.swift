@@ -11,10 +11,12 @@ import FirebaseAuth
 class AuthViewModel {
     var isAuthenticated: Bool = false
     var errorMessage: String?
+    var user: User?
 
     init() {
         Auth.auth().addStateDidChangeListener { _, user in
             Task { @MainActor in
+                self.user = user // ✅ Track the user object
                 self.isAuthenticated = user != nil
             }
         }
@@ -27,6 +29,7 @@ class AuthViewModel {
                     self.errorMessage = error.localizedDescription
                 } else {
                     self.errorMessage = nil
+                    self.user = result?.user // ✅ Save the user on successful login
                     self.isAuthenticated = true
                 }
             }
@@ -37,6 +40,7 @@ class AuthViewModel {
         do {
             try Auth.auth().signOut()
             Task { @MainActor in
+                self.user = nil
                 self.isAuthenticated = false
             }
         } catch {

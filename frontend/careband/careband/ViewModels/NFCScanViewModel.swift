@@ -28,6 +28,12 @@ class NFCScanViewModel: NSObject, NFCNDEFReaderSessionDelegate {
         session?.begin()
     }
     
+    func readerSessionDidBecomeActive(_ session: NFCNDEFReaderSession) {
+        DispatchQueue.main.async {
+            self.message = "Scanning for NFC tag..."
+        }
+    }
+    
     func readerSession(_ session: NFCNDEFReaderSession, didInvalidateWithError error: Error) {
         DispatchQueue.main.async {
             self.message = "Scan failed: \(error.localizedDescription)"
@@ -59,7 +65,7 @@ class NFCScanViewModel: NSObject, NFCNDEFReaderSessionDelegate {
                 return
             }
 
-            guard let url = URL(string: "https://<your-region>-<your-project-id>.cloudfunctions.net/getPatientRecord") else {
+            guard let url = URL(string: "https://\(Config.region)-\(Config.projectID).cloudfunctions.net/getPatientRecord") else {
                 DispatchQueue.main.async {
                     self.message = "Invalid backend URL"
                 }

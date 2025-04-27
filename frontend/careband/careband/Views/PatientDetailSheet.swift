@@ -5,7 +5,6 @@
 //  Created by Khoi Dinh on 4/26/25.
 //
 
-
 import SwiftUI
 
 struct PatientDetailSheet: View {
@@ -13,26 +12,43 @@ struct PatientDetailSheet: View {
 
     var body: some View {
         NavigationView {
-            VStack(alignment: .leading, spacing: 15) {
-                Group {
-                    Text("Name: \(patient.name)")
-                    Text("DOB: \(formattedDate(patient.dob))")
-                    Text("SSN: \(patient.ssn)")
-                    Text("Allergies: \(patient.allergies.joined(separator: ", "))")
-                    Text("History:")
-                    ScrollView {
-                        Text(patient.history)
-                            .padding(.top, 2)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
+            Form {
+                Section(header: Text("Basic Information")) {
+                    patientRow(label: "Name", value: patient.name)
+                    patientRow(label: "Date of Birth", value: formattedDate(patient.dob))
+                    patientRow(label: "SSN", value: patient.ssn)
                 }
-                .font(.body)
 
-                Spacer()
+                Section(header: Text("Medical Information")) {
+                    patientRow(label: "Allergies", value: patient.allergies.isEmpty ? "None" : patient.allergies.joined(separator: ", "))
+                    
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("History")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        ScrollView {
+                            Text(patient.history.isEmpty ? "No history available." : patient.history)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.vertical, 4)
+                        }
+                        .frame(minHeight: 100) // enough room for history text
+                    }
+                    .padding(.vertical, 4)
+                }
             }
-            .padding()
             .navigationTitle("Patient Info")
             .navigationBarTitleDisplayMode(.inline)
+        }
+    }
+
+    @ViewBuilder
+    func patientRow(label: String, value: String) -> some View {
+        HStack {
+            Text(label)
+                .foregroundColor(.secondary)
+            Spacer()
+            Text(value)
+                .multilineTextAlignment(.trailing)
         }
     }
 

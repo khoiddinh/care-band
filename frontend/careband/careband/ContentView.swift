@@ -11,16 +11,17 @@ struct ContentView: View {
     @State var authViewModel = AuthViewModel()
     
     var body: some View {
-        if authViewModel.isAuthenticated {
-            HomeView()
-                .environment(authViewModel)
-        } else {
-            LoginView()
-                .environment(authViewModel)
+        NavigationStack {
+            if authViewModel.isAuthenticated {
+                HomeView()
+                    .environment(authViewModel)
+            } else {
+                LoginView()
+                    .environment(authViewModel)
+            }
         }
     }
 }
-
 #Preview {
     ContentView()
 }

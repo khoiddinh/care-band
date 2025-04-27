@@ -53,24 +53,22 @@ exports.getPatientRecord = onRequest(async (req, res) => {
 // No auth checking
 exports.addOrUpdatePatient = onRequest(async (req, res) => {
     try {
-        const { name, dob, ssn, allergies, history } = req.body;
+        const { uuid, name, dob, ssn, allergies, history } = req.body;
 
         if (!name || !dob || !ssn) {
             return res.status(400).json({ error: "Missing required patient fields (name, dob, ssn)" });
         }
 
-        const patientsRef = db.collection("patients");
-        const existingQuery = await patientsRef
-            .where("name", "==", name)
-            .where("dob", "==", dob)
-            .where("ssn", "==", ssn)
-            .get();
-
         const today = new Date();
         const dateStr = today.toISOString().split('T')[0];
-        const newHistoryEntry = `[${dateStr}] ${history}`;
 
-        // 🔵 Normalize incoming allergies
+        let newHistoryEntry = "";
+
+        if (history && history.trim() !== "") {
+            newHistoryEntry = `[${dateStr}] ${history.trim()}`;
+        }
+
+        // 🔵 Normalize allergies
         let newAllergiesList = [];
         if (typeof allergies === "string") {
             newAllergiesList = allergies.split(";").map(a => a.trim()).filter(a => a.length > 0);
@@ -78,13 +76,20 @@ exports.addOrUpdatePatient = onRequest(async (req, res) => {
             newAllergiesList = allergies.map(a => a.trim()).filter(a => a.length > 0);
         }
 
-        if (!existingQuery.empty) {
-            const existingDoc = existingQuery.docs[0];
-            const oldData = existingDoc.data();
+        const patientsRef = db.collection("patients");
 
-            const newUUID = db.collection("patients").doc().id;
+        if (uuid) {
+            // ✅ If uuid is provided, update the patient directly
+            const patientDoc = patientsRef.doc(uuid);
+            const docSnapshot = await patientDoc.get();
 
-            // 🔵 Normalize old allergies
+            if (!docSnapshot.exists) {
+                return res.status(404).json({ error: "Patient not found" });
+            }
+
+            const oldData = docSnapshot.data();
+
+            // Merge allergies
             let oldAllergiesList = [];
             if (typeof oldData.allergies === "string") {
                 oldAllergiesList = oldData.allergies.split(";").map(a => a.trim()).filter(a => a.length > 0);
@@ -92,28 +97,30 @@ exports.addOrUpdatePatient = onRequest(async (req, res) => {
                 oldAllergiesList = oldData.allergies.map(a => a.trim()).filter(a => a.length > 0);
             }
 
-            // 🔵 Merge allergies uniquely
             const mergedAllergiesSet = new Set([...oldAllergiesList, ...newAllergiesList]);
             const mergedAllergiesString = Array.from(mergedAllergiesSet).join("; ");
 
-            const updatedHistory = oldData.history
-                ? oldData.history + "\n" + newHistoryEntry
-                : newHistoryEntry;
+            let updatedHistory = oldData.history || "";
 
-            await db.collection("patients").doc(newUUID).set({
+            if (newHistoryEntry.length > 0) {
+                updatedHistory = updatedHistory ? (updatedHistory + "\n" + newHistoryEntry) : newHistoryEntry;
+            }
+
+            await patientDoc.update({
                 name,
                 dob,
                 ssn,
                 allergies: mergedAllergiesString,
                 history: updatedHistory,
-                createdAt: today
+                updatedAt: today
             });
 
-            res.status(200).json({ message: "Existing patient found. New version created.", newUUID });
+            return res.status(200).json({ message: "Patient updated successfully." });
         } else {
-            const uuid = db.collection("patients").doc().id;
+            // ❗ No uuid provided → fallback to creating new patient
+            const uuid = patientsRef.doc().id;
 
-            await db.collection("patients").doc(uuid).set({
+            await patientsRef.doc(uuid).set({
                 name,
                 dob,
                 ssn,
@@ -122,76 +129,10 @@ exports.addOrUpdatePatient = onRequest(async (req, res) => {
                 createdAt: today
             });
 
-            res.status(201).json({ message: "New patient created.", uuid });
+            return res.status(201).json({ message: "New patient created.", uuid });
         }
     } catch (e) {
         console.error("Error in addOrUpdatePatient function:", e);
         res.status(500).json({ error: e.message });
     }
 });
-
-  
-
-// No auth checking
-exports.findPatient = onRequest(async (req, res) => {
-    try {
-        const { ssn, dob, uuid } = req.body;
-        console.log("SSN received:", req.body.ssn);
-        console.log("DOB received:", req.body.dob);
-        console.log("UUID received:", req.body.uuid);
-        console.log("Request body:", req.body);
-        if (!ssn && !dob && !uuid) {
-            return res.status(400).json({ error: "At least one of ssn, dob, or uuid must be provided" });
-        }
-        let doc;
-  
-        if (uuid) {
-            doc = await db.collection("patients").doc(uuid).get();
-      } else if (ssn && dob) {
-        const querySnapshot = await db.collection("patients")
-            .where("ssn", "==", ssn)
-            .where("dob", "==", dob)
-            .limit(1)
-            .get();
-        if (!querySnapshot.empty) {
-            doc = querySnapshot.docs[0];
-        }
-      } else if (ssn) {
-        const querySnapshot = await db.collection("patients")
-            .where("ssn", "==", ssn)
-            .limit(1)
-            .get();
-        if (!querySnapshot.empty) {
-            doc = querySnapshot.docs[0];
-        }
-      } else if (dob) {
-        const querySnapshot = await db.collection("patients")
-            .where("dob", "==", dob)
-            .limit(1)
-            .get();
-        if (!querySnapshot.empty) {
-            doc = querySnapshot.docs[0];
-        }
-      } else {
-            return res.status(400).json({ error: "At least one of ssn, dob, or uuid must be provided" });
-      }
-  
-      if (!doc || !doc.exists) {
-        return res.status(404).json({ error: "Patient not found" });
-      }
-  
-      const data = doc.data();
-      return res.status(200).json({
-        uuid: doc.id,
-        name: data.name,
-        dob: data.dob,
-        ssn: data.ssn,
-        allergies: data.allergies,
-        history: data.history || ""
-      });
-    } catch (e) {
-      console.error("Error in findPatient function:", e);
-      return res.status(500).json({ error: e.message });
-    }
-  });
-  
