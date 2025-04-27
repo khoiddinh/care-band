@@ -15,6 +15,7 @@ import Observation
 class NFCScanViewModel: NSObject, NFCNDEFReaderSessionDelegate {
     var patient: Patient?
     var message: String = "Tap scan to begin."
+    var didFailScan: Bool = false
     
     private var session: NFCNDEFReaderSession?
     
@@ -37,8 +38,10 @@ class NFCScanViewModel: NSObject, NFCNDEFReaderSessionDelegate {
     func readerSession(_ session: NFCNDEFReaderSession, didInvalidateWithError error: Error) {
         DispatchQueue.main.async {
             self.message = "Scan failed: \(error.localizedDescription)"
+            self.didFailScan = true // ✅ mark as failed
         }
     }
+
     
     func readerSession(_ session: NFCNDEFReaderSession, didDetectNDEFs messages: [NFCNDEFMessage]) {
         guard let record = messages.first?.records.first,

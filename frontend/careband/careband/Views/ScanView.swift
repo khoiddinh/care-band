@@ -10,10 +10,10 @@ import SwiftUI
 struct ScanView: View {
     @State var nfcViewModel = NFCScanViewModel()
     @State var qrViewModel = QRScanViewModel()
-    
-    @State private var isShowingPatientSheet = false
+
     @State private var selectedPatient: Patient?
-    
+    @State private var isNavigatingToPatientAction = false
+
     @State private var isScanningNFC = false
     @State private var isScanningQR = false
 
@@ -32,6 +32,7 @@ struct ScanView: View {
                     color: .blue,
                     isLoading: isScanningNFC,
                     action: {
+                        triggerHaptic()
                         isScanningNFC = true
                         nfcViewModel.startNFCScan()
                     }
@@ -43,7 +44,9 @@ struct ScanView: View {
                     color: .green,
                     isLoading: isScanningQR,
                     action: {
+                        triggerHaptic()
                         isScanningQR = true
+                        qrViewModel = QRScanViewModel()
                         qrViewModel.startQRScan()
                     }
                 )
@@ -52,32 +55,51 @@ struct ScanView: View {
 
             Spacer()
         }
+        .background(Color(UIColor.systemGroupedBackground))
+        .navigationTitle("Scan Patient")
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationDestination(isPresented: $isNavigatingToPatientAction) {
+            if let patient = selectedPatient {
+                PatientActionView(patient: patient)
+            }
+        }
         .fullScreenCover(isPresented: $qrViewModel.isShowingQRScanner) {
             QRScannerView(isPresented: $qrViewModel.isShowingQRScanner) { scannedUUID in
                 qrViewModel.handleScannedUUID(scannedUUID)
-                isScanningQR = false
+                isScanningQR = false // ✅ Reset loading when QR scanned
             }
-        }
-        .sheet(item: $selectedPatient) { patient in
-            PatientDetailSheet(patient: patient)
+            .onDisappear {
+                if isScanningQR {
+                    isScanningQR = false // ✅ Reset loading if user cancels QR scan
+                }
+            }
         }
         .onChange(of: nfcViewModel.patient) { _, newPatient in
             if let newPatient = newPatient {
                 selectedPatient = newPatient
-                isShowingPatientSheet = true
-                isScanningNFC = false
+                isNavigatingToPatientAction = true
+                isScanningNFC = false // ✅ Reset loading when NFC scanned
             }
         }
         .onChange(of: qrViewModel.patient) { _, newPatient in
             if let newPatient = newPatient {
                 selectedPatient = newPatient
-                isShowingPatientSheet = true
-                isScanningQR = false
+                isNavigatingToPatientAction = true
+                isScanningQR = false // ✅ Reset loading when QR scanned
             }
         }
-        .background(Color(UIColor.systemGroupedBackground))
-        .navigationTitle("Scan Patient")
-        .navigationBarTitleDisplayMode(.inline)
+        .onChange(of: nfcViewModel.didFailScan) { _, didFail in
+            if didFail {
+                isScanningNFC = false // ✅ Reset loading if NFC fails
+                nfcViewModel.didFailScan = false
+            }
+        }
+        .onChange(of: qrViewModel.didFailScan) { _, didFail in
+            if didFail {
+                isScanningQR = false // ✅ Reset loading if QR fails
+                qrViewModel.didFailScan = false
+            }
+        }
     }
 
     @ViewBuilder
@@ -124,10 +146,9 @@ struct ScanView: View {
                 } else {
                     Image(systemName: systemImage)
                         .font(.title2)
+                    Text(isLoading ? "Scanning..." : title)
+                        .font(.headline)
                 }
-
-                Text(isLoading ? "Scanning..." : title)
-                    .font(.headline)
             }
             .foregroundColor(.white)
             .frame(maxWidth: .infinity)
@@ -139,5 +160,11 @@ struct ScanView: View {
             .animation(.easeInOut(duration: 0.3), value: isLoading)
         }
         .disabled(isLoading)
+    }
+
+    private func triggerHaptic() {
+        let generator = UIImpactFeedbackGenerator(style: .medium)
+        generator.prepare()
+        generator.impactOccurred()
     }
 }
