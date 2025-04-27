@@ -14,6 +14,7 @@ class QRScanViewModel {
     var patient: Patient?
     var message: String = "Tap scan to begin."
     var isShowingQRScanner = false
+    var didFailScan: Bool = false
     
     func startQRScan() {
         isShowingQRScanner = true

@@ -19,6 +19,9 @@ struct AddPatientView: View {
     @State private var history = ""
     @State private var message: String?
     @State private var showSuccess = false
+    @State private var showQRCodeSheet = false
+    @State private var generatedUUID: String?
+
 
     var body: some View {
         Form {
@@ -33,7 +36,7 @@ struct AddPatientView: View {
                 }
 
                 TextField("SSN", text: $ssn)
-
+ 
                 VStack(alignment: .leading) {
                     Text("Add Allergy")
                         .font(.subheadline)
@@ -84,6 +87,11 @@ struct AddPatientView: View {
             }
         }
         .navigationTitle("Add Patient")
+        .sheet(isPresented: $showQRCodeSheet) {
+            if let uuid = generatedUUID {
+                QRCodeSheet(uuid: uuid)
+            }
+        }
     }
 
     func addPatient() {
@@ -119,8 +127,12 @@ struct AddPatientView: View {
             }
 
             if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-               json["uuid"] != nil || json["newUUID"] != nil {
+               let uuid = (json["uuid"] as? String) ?? (json["newUUID"] as? String) {
                 DispatchQueue.main.async {
+                    self.generatedUUID = uuid
+                    self.showQRCodeSheet = true
+
+                    // reset form
                     self.message = nil
                     self.name = ""
                     self.dob = Date()
@@ -128,7 +140,6 @@ struct AddPatientView: View {
                     self.allergies = []
                     self.newAllergyEntry = ""
                     self.history = ""
-                    self.showSuccess = true
                 }
             } else {
                 let serverResponse = String(data: data, encoding: .utf8) ?? "Unknown server response"
