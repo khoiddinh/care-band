@@ -136,3 +136,78 @@ exports.addOrUpdatePatient = onRequest(async (req, res) => {
         res.status(500).json({ error: e.message });
     }
 });
+// index.js in Firebase Functions
+exports.deletePatient = onRequest(async (req, res) => {
+    const { uuid } = req.body;
+    if (!uuid) {
+        return res.status(400).json({ error: "Missing UUID" });
+    }
+
+    const docRef = db.collection("patients").doc(uuid);
+    await docRef.delete();
+
+    res.status(200).json({ message: "Patient deleted successfully" });
+});
+
+exports.findPatient = onRequest(async (req, res) => {
+    try {
+        const { ssn, dob, uuid } = req.body;
+        console.log("SSN received:", req.body.ssn);
+        console.log("DOB received:", req.body.dob);
+        console.log("UUID received:", req.body.uuid);
+        console.log("Request body:", req.body);
+        if (!ssn && !dob && !uuid) {
+            return res.status(400).json({ error: "At least one of ssn, dob, or uuid must be provided" });
+        }
+        let doc;
+  
+        if (uuid) {
+            doc = await db.collection("patients").doc(uuid).get();
+      } else if (ssn && dob) {
+        const querySnapshot = await db.collection("patients")
+            .where("ssn", "==", ssn)
+            .where("dob", "==", dob)
+            .limit(1)
+            .get();
+        if (!querySnapshot.empty) {
+            doc = querySnapshot.docs[0];
+        }
+      } else if (ssn) {
+        const querySnapshot = await db.collection("patients")
+            .where("ssn", "==", ssn)
+            .limit(1)
+            .get();
+        if (!querySnapshot.empty) {
+            doc = querySnapshot.docs[0];
+        }
+      } else if (dob) {
+        const querySnapshot = await db.collection("patients")
+            .where("dob", "==", dob)
+            .limit(1)
+            .get();
+        if (!querySnapshot.empty) {
+            doc = querySnapshot.docs[0];
+        }
+      } else {
+            return res.status(400).json({ error: "At least one of ssn, dob, or uuid must be provided" });
+      }
+  
+      if (!doc || !doc.exists) {
+        return res.status(404).json({ error: "Patient not found" });
+      }
+  
+      const data = doc.data();
+      return res.status(200).json({
+        uuid: doc.id,
+        name: data.name,
+        dob: data.dob,
+        ssn: data.ssn,
+        allergies: data.allergies,
+        history: data.history || ""
+      });
+    } catch (e) {
+      console.error("Error in findPatient function:", e);
+      return res.status(500).json({ error: e.message });
+    }
+});
+  
