@@ -3,6 +3,7 @@
 CareBand is a lightweight, secure hospital patient identification system that uses NFC bracelets and QR codes to retrieve, view, and update patient information instantly.  
 Built for speed, security, and a seamless user experience.
 
+**NOTE:** for full functionality, build the branch new_flow
 ## Features
 
 - **NFC Bracelet Scanning**: Quickly scan a patient's NFC-enabled bracelet to access medical records.
